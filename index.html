@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <meta charset='utf-8' />
+    <title>Street Leads Rentals Chile 13/05</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.css' rel='stylesheet' />
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.min.js"></script>
+<link
+rel="stylesheet"
+href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.css"
+type="text/css"
+/>
+    <style>
+     body {
+margin: 0;
+padding: 0;
+}
+h2,
+h3 {
+margin: 10px;
+font-size: 18px;
+}
+h3 {
+font-size: 16px;
+}
+p {
+margin: 10px;
+}
+.map-overlay {
+position: absolute;
+bottom: 0;
+right: 0;
+background: #fff;
+margin-right: 10px;
+font-family: Arial, sans-serif;
+overflow: auto;
+border-radius: 10px;
+}
+#map {
+position: absolute;
+top: 0;
+bottom: 0;
+width: 100%;
+}
+#features {
+top: 0;
+bottom:0;
+height: 180px;
+margin-top: 50px;
+width: 240px;
+}
+#legend {
+padding: 10px;
+box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+line-height: 18px;
+height: 96px;
+margin-bottom: 40px;
+width: 100px;
+}
+.legend-key {
+display: inline-block;
+border-radius: 20%;
+width: 10px;
+height: 10px;
+margin-right: 5px;
+}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="map-overlay" id="features">
+<h2>Concentración de rentals por zona</h2>
+<div id="pd"><p>Mueve el cursor por el mapa</p></div>
+</div>
+<div class="map-overlay" id="legend"></div>
+ 
+    <script>
+    // The value for 'accessToken' begins with 'pk...'
+    mapboxgl.accessToken = 'pk.eyJ1IjoiamF2aWVyaG91bSIsImEiOiJjbDJvNHF5ZmcwYjFuM2NxbXFsaHl1ajltIn0.PIvZuvpLQhFhMc3Y4vKBoQ'; 
+    const map = new mapboxgl.Map({
+      container: 'map',
+      // Replace YOUR_STYLE_URL with your style URL.
+      style: 'mapbox://styles/javierhoum/cl2tsxkna000116o94w7uuu2y', 
+      center: [-70.6424, -33.4490],
+      zoom: 10.3
+    });
+    
+ 
+    
+    /* 
+Add an event listener that runs
+  when a user clicks on the map element.
+*/
+map.on('click', (event) => {
+  // If the user clicked on one of your markers, get its information.
+  const features = map.queryRenderedFeatures(event.point, {
+    layers: ['nom-rent'] // replace with your layer name
+  });
+  if (!features.length) {
+    return;
+  }
+  const feature = features[0];
+
+  // Code from the next step will go here.
+/* 
+    Create a popup, specify its options 
+    and properties, and add it to the map.
+  */
+  const popup = new mapboxgl.Popup({ offset: [0, -15] })
+  .setLngLat(feature.geometry.coordinates)
+  .setHTML(
+    `<h2>Punto de propiedad</h2><h3>Comuna: ${feature.properties.comuna}</h3><p>Precio ($): ${feature.properties.price_peso} </p> 
+    <p>Superficie (m²): ${feature.properties.superficie} </p><p>Baños : ${feature.properties.bathrooms}</p> </p><p>Dormiorios : ${feature.properties.bedrooms}</p>
+    <p>Portal: ${feature.properties.origin}</p>`
+  )
+  .addTo(map);
+});
+//const marker = new mapboxgl.Marker() // Initialize a new marker
+//.setLngLat([-70.66030, -33.44610]) // Marker [lng, lat] coordinates
+//.addTo(map); // Add the marker to the map
+ 
+const geocoder = new MapboxGeocoder({
+// Initialize the geocoder
+accessToken: mapboxgl.accessToken, // Set the access token
+mapboxgl: mapboxgl, // Set the mapbox-gl instance
+marker: false, // Do not use the default marker style
+placeholder: 'Busca direcciones o barrios', // Placeholder text for the search bar
+bbox: [-71.21610, -33.92320, -69.862100, -33.07170], // Boundary for Santiago
+proximity: {
+longitude: -70.66030,
+latitude: -33.44610
+} // Coordinates of km 0 santiago
+});
+ 
+// Add the geocoder to the map
+map.addControl(geocoder);
+ 
+// After the map style has loaded on the page,
+// add a source layer and default styling for a single point
+map.on('load', () => {
+map.addSource('single-point', {
+'type': 'geojson',
+'data': {
+'type': 'FeatureCollection',
+'features': []
+}
+});
+ 
+map.addLayer({
+'id': 'point',
+'source': 'single-point',
+'type': 'circle',
+'paint': {
+'circle-radius': 13,
+'circle-color': '#263238'
+}
+});
+ 
+// Listen for the `result` event from the Geocoder // `result` event is triggered when a user makes a selection
+//  Add a marker at the result's coordinates
+geocoder.on('result', (event) => {
+map.getSource('single-point').setData(event.result.geometry);
+});
+});
+
+    // Code from the next step will go here.
+// define layer names
+const layers = [
+'0 - 1',
+'2 - 4',
+'5 - 9',
+'10 - 21',
+'> 21',
+];
+const colors = [
+'#FFFFCC',
+'#A0DAB3',
+'#40B7C4',
+'#2D81B9',
+'#253494',
+];
+ 
+// create legend
+const legend = document.getElementById('legend');
+
+ 
+layers.forEach((layer, i) => {
+const color = colors[i];
+const item = document.createElement('div');
+const key = document.createElement('span');
+key.className = 'legend-key';
+key.style.backgroundColor = color;
+ 
+const value = document.createElement('span');
+value.innerHTML = `${layer}`;
+item.appendChild(key);
+item.appendChild(value);
+legend.appendChild(item);
+});
+ 
+// change info window on hover
+map.on('mousemove', (event) => {
+const uv = map.queryRenderedFeatures(event.point, {
+layers: ['uv']
+});
+document.getElementById('pd').innerHTML = uv.length
+? `<h3>${uv[0].properties.NOM_COMUNA}</h3><p><strong>${uv[0].properties.cant} Unidades en rentals</p></strong>
+<p>${uv[0].properties.canthoum} Unidades Houm</em></p><p>${uv[0].properties.cantnohoum} Unidades No Houm</em></p>`
+: `<p>Unidades en rentals</p>`;
+});
+</script>
+</body>
+</html>
